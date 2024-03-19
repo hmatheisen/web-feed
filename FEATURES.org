@@ -1,0 +1,17 @@
+#+TITLE: Features
+
+* List articles in a feed
+
+Input:
+
+#+begin_src shell
+  feed --url "<url>"
+#+end_src
+
+- Lists 5 lasts article by default
+- Shows
+  - title
+  - link
+  - description
+
+* Save list of feeds
