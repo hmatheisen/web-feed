@@ -39,16 +39,18 @@ type Link struct {
 }
 
 type Entry struct {
-	Author       Person   `xml:"author"`
-	Category     Category `xml:"category"`
-	Content      Content  `xml:"content"`
-	Contributor  Person   `xml:"contributor"`
-	ID           string   `xml:"id"`
-	Link         Link     `xml:"link"`
-	Published    string   `xml:"published"`
-	Rights       string   `xml:"rights"`
-	Source       string   `xml:"source"`
-	SummaryTitle string   `xml:"summarytitle"`
+	Author      Person   `xml:"author"`
+	Category    Category `xml:"category"`
+	Content     Content  `xml:"content"`
+	Contributor Person   `xml:"contributor"`
+	ID          string   `xml:"id"`
+	Link        Link     `xml:"link"`
+	Published   string   `xml:"published"`
+	Rights      string   `xml:"rights"`
+	Source      string   `xml:"source"`
+	Summary     string   `xml:"summary"`
+	Title       string   `xml:"title"`
+	Updated     string   `xml:"updated"`
 }
 
 type Category struct {
@@ -61,4 +63,22 @@ type Content struct {
 	Type  string `xml:"type,attr"`
 	Src   string `xml:"src,attr"`
 	Value string `xml:",innerxml"`
+}
+
+func (a Atom) List(count int) []Article {
+	// make count shorter id there are less articles
+	if len(a.Entries) < count {
+		count = len(a.Entries)
+	}
+
+	articles := make([]Article, count)
+	entries := a.Entries
+
+	for i := 0; i < count; i++ {
+		articles[i].Title = entries[i].Title
+		articles[i].Description = entries[i].Content.Value
+		articles[i].Link = entries[i].Link.Href
+	}
+
+	return articles
 }
