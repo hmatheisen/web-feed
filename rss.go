@@ -25,7 +25,7 @@ type Item struct {
 	Source      string `xml:"source"`
 }
 
-func (rss RSS) List(count int) any {
+func (rss RSS) List(count int) []Article {
 	// make count shorter id there are less articles
 	if len(rss.Channel.Items) < count {
 		count = len(rss.Channel.Items)
@@ -36,7 +36,6 @@ func (rss RSS) List(count int) any {
 
 	for i := 0; i < count; i++ {
 		articles[i].Title = items[i].Title
-		articles[i].Description = items[i].Description
 		articles[i].Link = items[i].Link
 	}
 

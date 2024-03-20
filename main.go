@@ -9,20 +9,21 @@ import (
 	"os"
 )
 
-var url = flag.String("url", "", "rss url")
+var (
+	url   = flag.String("url", "", "rss url")
+	count = flag.Int("count", 5, "articles count")
+)
 
 type Article struct {
-	Title       string
-	Link        string
-	Description string
+	Title string
+	Link  string
 }
 
 func (a Article) String() string {
 	return fmt.Sprintf(
-		"Title: %s\nLink: %s\nDescription: %s\n",
+		"Title: %s\nLink: %s\n",
 		a.Title,
 		a.Link,
-		a.Description,
 	)
 }
 
@@ -30,9 +31,21 @@ type Feed interface {
 	List(count int) []Article
 }
 
+func detectFeedType(data []byte) (*string, error) {
+	var feed struct {
+		XMLName xml.Name
+	}
+
+	err := xml.Unmarshal(data, &feed)
+	if err != nil {
+		return nil, err
+	}
+
+	return &feed.XMLName.Local, nil
+}
+
 func NewFeed(url *string) (Feed, error) {
-	// TODO: find a way to differenciate RSS from Atom
-	feed := new(Atom)
+	var feed Feed
 
 	res, err := http.Get(*url)
 	if err != nil {
@@ -42,6 +55,20 @@ func NewFeed(url *string) (Feed, error) {
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	feedType, err := detectFeedType(data)
+	if err != nil {
+		return nil, err
+	}
+
+	switch *feedType {
+	default:
+		return nil, fmt.Errorf("Unknown feed type: %s\n", *feedType)
+	case "feed":
+		feed = new(Atom)
+	case "rss":
+		feed = new(RSS)
 	}
 
 	err = xml.Unmarshal(data, &feed)
@@ -65,7 +92,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, article := range feed.List(3) {
+	for _, article := range feed.List(*count) {
 		fmt.Println(article)
 	}
 }

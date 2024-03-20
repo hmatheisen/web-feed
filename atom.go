@@ -76,7 +76,6 @@ func (a Atom) List(count int) []Article {
 
 	for i := 0; i < count; i++ {
 		articles[i].Title = entries[i].Title
-		articles[i].Description = entries[i].Content.Value
 		articles[i].Link = entries[i].Link.Href
 	}
 
