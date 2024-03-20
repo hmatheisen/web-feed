@@ -1,82 +1,65 @@
 package main
 
 import (
-	"encoding/xml"
+	"bufio"
 	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
+	"path"
+	"strings"
 )
 
 var (
 	url   = flag.String("url", "", "rss url")
 	count = flag.Int("count", 5, "articles count")
+	save  = flag.Bool("save", false, "save a feed url")
 )
 
-type Article struct {
-	Title string
-	Link  string
-}
+const (
+	DBDir  = ".web-feed"
+	DBFile = "feeds"
+)
 
-func (a Article) String() string {
-	return fmt.Sprintf(
-		"Title: %s\nLink: %s\n",
-		a.Title,
-		a.Link,
+func saveUrl(url string) {
+	var sb strings.Builder
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+
+	err = os.Mkdir(path.Join(home, DBDir), 0750)
+	if err != nil && !os.IsExist(err) {
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+
+	file, err := os.OpenFile(
+		path.Join(home, DBDir, DBFile),
+		os.O_APPEND|os.O_CREATE|os.O_RDWR,
+		0644,
 	)
-}
-
-type Feed interface {
-	List(count int) []Article
-}
-
-func detectFeedType(data []byte) (*string, error) {
-	var feed struct {
-		XMLName xml.Name
-	}
-
-	err := xml.Unmarshal(data, &feed)
 	if err != nil {
-		return nil, err
+		fmt.Fprintln(os.Stderr, err)
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if scanner.Text() == url {
+			return
+		}
 	}
 
-	return &feed.XMLName.Local, nil
-}
+	sb.WriteString(url)
+	sb.WriteRune('\n')
 
-func NewFeed(url *string) (Feed, error) {
-	var feed Feed
-
-	res, err := http.Get(*url)
+	_, err = file.WriteString(sb.String())
 	if err != nil {
-		return nil, err
+		fmt.Fprintln(os.Stderr, err)
+		return
 	}
-
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	feedType, err := detectFeedType(data)
-	if err != nil {
-		return nil, err
-	}
-
-	switch *feedType {
-	default:
-		return nil, fmt.Errorf("Unknown feed type: %s\n", *feedType)
-	case "feed":
-		feed = new(Atom)
-	case "rss":
-		feed = new(RSS)
-	}
-
-	err = xml.Unmarshal(data, &feed)
-	if err != nil {
-		return nil, err
-	}
-
-	return feed, nil
 }
 
 func main() {
@@ -84,6 +67,10 @@ func main() {
 	if *url == "" {
 		fmt.Fprintln(os.Stderr, "url must be provided")
 		os.Exit(2)
+	}
+
+	if *save {
+		go saveUrl(*url)
 	}
 
 	feed, err := NewFeed(url)
