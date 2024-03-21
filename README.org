@@ -1,0 +1,34 @@
+* Web feed
+
+- list RSS/Atom feeds from the command line
+- Save your favourite feeds
+
+** Usage
+
+*** Build/Install
+
+#+begin_src shell
+  go build
+#+end_src
+
+or
+
+#+begin_src shell
+  go install
+#+end_src
+
+*** List articles
+
+#+begin_src shell
+  web-feed --url <your-feed-url>
+#+end_src
+
+- =--count= controlls the number of listed articles
+- =--save= saves the feed url in a file
+
+
+*** List articles from saved feeds
+
+#+begin_src shell
+  web-feed --list-saved
+#+end_src
